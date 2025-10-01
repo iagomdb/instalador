@@ -1,0 +1,94 @@
+# LibertySolutions VM - Setup Completo
+
+Criar host dentro do ubuntu para teste de novas funcionalidades
+
+Atualmente a produção esta andando em frontend.local backend.local
+
+
+## 1. Configuração de Rede
+- Inicialmente estava em NAT com port forwarding → dificultava acesso.
+- Migramos para Bridge e depois para Host-Only Adapter para facilitar:
+  - VM ganhou IP fixo: 192.168.56.102.
+  - Windows acessa VM direto nesse IP.
+- Arquivo hosts no Windows atualizado:
+  192.168.56.102 frontend.local
+  192.168.56.102 backend.local
+
+### Sudo dhclient enp0s8
+
+
+## 2. Serviços e Portas
+- Frontend (React): porta 3000
+- Backend (Node/Express): porta 4000
+- aaPanel: porta 21045
+- Redis: default 6379 (antes estava 5000)
+- Postgres: default 5432
+
+## 3. Ajustes de .env
+### Frontend
+Antes:
+REACT_APP_BACKEND_URL=https://backend.local
+
+Agora:
+REACT_APP_BACKEND_URL=http://backend.local:4000
+
+### Backend env.
+BACKEND_URL=http://backend.local
+FRONTEND_URL=http://frontend.local
+PORT=4000
+REDIS_URI=redis://:cocoloco@127.0.0.1:5000
+
+Agora (corrigido):
+BACKEND_URL=http://backend.local:4000
+FRONTEND_URL=http://frontend.local:3000
+PORT=4000
+
+DB_DIALECT=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=libertysolution
+DB_PASS=cocoloco
+DB_NAME=libertysolution
+
+REDIS_URI=redis://:cocoloco@127.0.0.1:6379
+
+## 4. Builds & Deploy
+- Frontend:
+  - Sempre precisa rebuild (npm run build) ao mudar .env.
+  - Rodando em /home/deploy/libertysolutions/frontend.
+
+- Backend:
+  - Só precisa restart (npm start ou npm run dev, dependendo do script).
+  - Rodando em /home/deploy/libertysolutions/backend.
+
+## 5. Permissões
+- Usuário principal de deploy: deploy.
+- Para acessar pastas protegidas:
+  sudo -i -u deploy
+
+Se quiser ajustar o installer dps é contigo.
+
+## 6. Problemas Resolvidos
+1. Timeout externo → resolvido ao usar bridge/host-only.
+2. Frontend apontando para HTTPS errado → ajustado .env para HTTP com porta forçada.
+3. Backend sem resposta no / → confirmado que responde em /auth/login e outras rotas.
+4. Erro de CORS → corrigido (mesmo origin configurado no backend).
+5. Permissão de acesso ao código → resolvido com sudo -i -u deploy.
+
+## 7. Checklist Rápido para Futuro
+1. Ajustar hosts no Windows com IP da VM.
+2. Verificar se serviços sobem (curl http://localhost:4000/health, curl http://localhost:3000).
+3. Editar .env do frontend/backend conforme domínio/IP.
+4. Rodar:
+   cd ~/libertysolutions/frontend && npm run build
+   cd ~/libertysolutions/backend && npm run build
+5. Testar login no navegador em http://frontend.local:3000.
+6. Se erro de CORS → garantir que origin no backend aceita frontend.local.
+
+---
+
+## Script Bash - Descobrir IP do Host-Only Adapter
+#!/bin/bash
+# Mostra o IP atribuído à interface vboxnet (Host-Only)
+ip a
+ip addr show | grep "inet " | grep "192.168.56" | awk '{print $2}' | cut -d/ -f1

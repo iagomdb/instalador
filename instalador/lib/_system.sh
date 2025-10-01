@@ -39,7 +39,7 @@ system_git_clone() {
   sleep 2
 
   sudo su - deploy <<EOF
-  git clone git clone https://<token>@github.com/iagomdb/AtendeChat.git /home/deploy/${instancia_add}/
+  git clone https://<token>@github.com/iagomdb/AtendeChat.git /home/deploy/${instancia_add}/
  /home/deploy/${instancia_add}/
 
   sleep 2
